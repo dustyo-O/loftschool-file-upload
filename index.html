@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Getting started &middot; Flat UI Free</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Loading Bootstrap -->
+    <link href="bower_components/flat-ui/dist/css/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Loading Flat UI -->
+    <link href="bower_components/flat-ui/dist/css/flat-ui.css" rel="stylesheet">
+    <link href="bower_components/flat-ui/docs/assets/css/docs.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="../img/favicon.ico">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements. All other JS at the end of file. -->
+    <!--[if lt IE 9]>
+      <script src="bower_components/flat-ui/dist/js/vendor/html5shiv.js"></script>
+      <script src="bower_components/flat-ui/dist/js/vendor/respond.min.js"></script>
+    <![endif]-->
+    <link href="bower_components/dropzone/dist/min/dropzone.min.css" rel="stylesheet">
+    <link href="bower_components/dropzone/dist/min/basic.min.css" rel="stylesheet">
+    
+  </head>
+  <body>
+    <div class="container">
+        <h1>Загрузка файлов</h1>
+<!--        <label>Название файла:</label> <input class="form-control"> -->
+        <form action="/upload.php" class="dropzone upload-form"></form>    
+        <button class="btn btn-lg btn-inverse button-save">Сохранить</button>
+    
+    </div><!-- /.container -->
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>    
+    <script src="bower_components/dropzone/dist/min/dropzone.min.js"></script>
+    <script>
+        Dropzone.autoDiscover = false;
+
+        $(function() {
+            var PALETTE_CLASS_PREFIX = 'palette palette-',
+                ERROR_CLASS = 'pomegranate';
+
+            function countUploadedFiles() {
+                var item = $('.upload-form'), 
+                    result = 0;
+                while(item.next().hasClass('file-container')) {
+                    result++;
+                    item = item.next();
+                }
+
+                return result;
+            }
+
+            $('.button-save').click(function() {
+                $('.palette-' + ERROR_CLASS).remove();
+
+                var filesCount = countUploadedFiles();
+                
+                if (filesCount === 0) {
+                    $(this).before($('<div/>', { 
+                        class: PALETTE_CLASS_PREFIX + ERROR_CLASS,
+                        text: 'Файлы не загружены!'
+                    }));
+                } else {
+                    var data = {};
+                    $('.file-container').each(function(index, item) {
+                        var $item = $(item),
+                            hash = $item.data('hash'),
+                            fileTitle = $('.file-title', $item).val()
+                        data[hash] = fileTitle;
+                    });
+
+                    $.ajax({
+                        url: 'save.php',
+                        data: data,
+                        method: 'POST',
+                        dataType: 'json'
+                    }).done(function(responce) {
+
+                        $('.container').empty();
+                        $('.container').append($('<h1/>', { text: 'Результат' }));
+
+                        for(var hash in data) {
+                            if (data.hasOwnProperty(hash)) {
+                                $('.container').append(
+                                    $('<div/>').append(
+                                        $('<a/>', {
+                                            href: '/' + hash,
+                                            text: data[hash]
+                                        })
+                                    )
+                                );
+                            }
+                        }
+                    });
+                }
+            });
+
+            var fileDropzone = new Dropzone(".upload-form");
+            fileDropzone.on('success', function(fileData, response) {
+                var fileName = fileData.name,
+                    fileHash = JSON.parse(response).folder;
+
+                $('.upload-form').after(
+                    $('<div/>', { 
+                        'data-hash': fileHash,
+                        'data-filename': fileName,
+                        class: 'file-container row' 
+                    }).append(
+                        $('<div/>', { class: 'col-md-3' }).append(
+                            $('<label/>', { text: 'Название: ' })
+                        )
+                    ).append(
+                        $('<div/>', { class: 'col-md-9' }).append(
+                            $('<input/>', { 
+                                class: 'file-title form-control',
+                                value: fileName
+                            })
+                        )
+                    )
+                );
+            });
+        });
+    </script>
+  </body>
+</html>
